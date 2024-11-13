@@ -8,10 +8,10 @@ pipeline {
         stage('Setup') {
             steps {
                 script {
-                if (!fileExists("${env.WORKSPACE}/${VIRTUAL_ENV}")) {
-                    bat "python -m venv ${VIRTUAL_ENV}"
-                }
-                bat "call ${VIRTUAL_ENV}/Scripts/activate && pip install -r requirements.txt"
+                    if (!fileExists("${env.WORKSPACE}/${VIRTUAL_ENV}")) {
+                        bat "python -m venv ${VIRTUAL_ENV}"
+                    }
+                    bat "call ${VIRTUAL_ENV}/Scripts/activate && pip install -r requirements.txt"
                 }
             }
         }
@@ -20,7 +20,7 @@ pipeline {
                 script {
                     bat "call ${VIRTUAL_ENV}/Scripts/activate && flake8 app.py"
                 }
-                }
+            }
         }
         stage('Test') {
             steps {
@@ -29,11 +29,29 @@ pipeline {
                 }
             }
         }
+        stage('Coverage') {
+            steps {
+                script {
+                    bat "call ${VIRTUAL_ENV}/Scripts/activate && coverage run -m pytest"
+                    bat "call ${VIRTUAL_ENV}/Scripts/activate && coverage report" 
+                    bat "call ${VIRTUAL_ENV}/Scripts/activate && coverage html"
+                    archiveArtifacts artifacts: 'htmlcov/**', allowEmptyArchive: true 
+                }
+            }
+        }
+        stage('Security Scan') { 
+            steps {
+                script {
+                    bat "call ${VIRTUAL_ENV}/Scripts/activate && bandit -r ."
+                }
+            }
+        }
         stage('Deploy') {
             steps {
                 script {
                 // Deployment logic, e.g., pushing to a remote server
                     echo "Deploying application..."
+                    bat "call ${VIRTUAL_ENV}/Scripts/activate && python deploy.py"
                 }
             }
         }
